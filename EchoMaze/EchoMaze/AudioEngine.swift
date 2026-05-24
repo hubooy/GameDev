@@ -95,15 +95,26 @@ final class AudioEngine: ObservableObject {
         let rms = sqrt(sum / Float(frameLength))
 
         // 转 dB 再归一化到 0~1
-        // RMS≈0.001(-60dB) -> 0, RMS≈0.5(-6dB) -> 1
+        // 噪声底 ~-45dB（安静室内的环境噪音），峰值 -10dB（正常讲话/呐喊）
         let db = 20 * log10(max(rms, 0.00001))
-        let normalized = max(0, min(1, (db + 60) / 54))  // -60dB~-6dB 映射到 0~1
+        var normalized = max(0, min(1, (db + 45) / 35))
+
+        // 噪声门：低于 0.12 视为静音，避免静态环境噪音持续点亮屏幕
+        if normalized < 0.12 {
+            normalized = 0
+        } else {
+            // 把 [0.12, 1.0] 重新映射回 [0, 1]，保持上半段动态范围
+            normalized = (normalized - 0.12) / 0.88
+        }
 
         // 平滑（低通）—— 上升快，下降稍慢
         let attack: Float = 0.6
         let release: Float = 0.25
         let coef = normalized > smoothing ? attack : release
         smoothing += (normalized - smoothing) * coef
+
+        // 平滑后再次 clamp 到底，避免 release 阶段长尾
+        if smoothing < 0.01 { smoothing = 0 }
 
         let display = smoothing
         DispatchQueue.main.async { [weak self] in

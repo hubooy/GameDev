@@ -39,7 +39,10 @@ EchoMaze 没有提交 `.xcodeproj`，仓库只保留源文件骨架。开发者�
 1. Xcode → New → iOS App，命名 `EchoMaze`，SwiftUI / Swift，部署目标 iOS 17.0+
 2. 删除 Xcode 自动生成的 `ContentView.swift` 与 `EchoMazeApp.swift`
 3. 把 `EchoMaze/EchoMaze/` 下所有 `.swift` 拖入工程
-4. 用本仓库的 `Info.plist` 覆盖，或手动添加 `NSMicrophoneUsageDescription`
+4. **不要拖入仓库的 `Info.plist`**（Xcode 14+ 默认自动合成 Info.plist，再拖一份会触发
+   "Multiple commands produce Info.plist" 编译错误）。改为在 Target → **Info** 标签页
+   手动添加 `Privacy - Microphone Usage Description`，文案参考仓库 `Info.plist`。
+   仓库里的 `Info.plist` 仅作为配置参考保留。
 5. **真机** 运行（模拟器无麦克风）
 
 > 由于没有 xcodeproj，没有 `swift build` 或 CI 测试命令可在本仓库直接跑。验证方式是在 Xcode 内打开后看是否能编译。
