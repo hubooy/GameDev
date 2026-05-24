@@ -14,9 +14,13 @@
 
 3. 把 `EchoMaze/` 文件夹下所有 `.swift` 文件拖进 Xcode 工程（勾选 "Copy items if needed"）
 
-4. 在 **Target → Info** 添加键：
-   - `Privacy - Microphone Usage Description` → 描述见 `Info.plist`
-   - 或直接用本项目的 Info.plist 覆盖
+4. 在 **Target → Info** 标签页手动添加键（**不要把仓库的 `Info.plist` 拖进工程**，
+   Xcode 14+ 会自动合成 Info.plist，再拖一份会出现 "Multiple commands produce
+   Info.plist" 编译错误）：
+   - `Privacy - Microphone Usage Description` → 文案见仓库 `Info.plist`
+   - `Status bar is initially hidden` = YES
+   - `View controller-based status bar appearance` = NO
+   - General → Deployment Info → iPhone Orientation 只勾 Portrait
 
 5. 真机运行（**模拟器无法测试麦克风**）
 
