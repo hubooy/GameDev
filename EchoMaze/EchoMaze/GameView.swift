@@ -22,6 +22,7 @@ struct GameView: View {
     @State private var stormPhase: Double = 0   // storm 主题阵风相位
     @State private var loudWarningFlash: Double = 0
     @State private var failGuardArmed: Bool = false // 给 0.4s 缓冲再开始判定 trap/loud
+    @State private var isFinishing: Bool = false     // 进入结算后阻断所有后续输入
 
     init(level: LevelData) {
         self.level = level
@@ -313,12 +314,13 @@ struct GameView: View {
         isPaused = false
         showHint = true
         failGuardArmed = false
+        isFinishing = false
     }
 
     // MARK: - 音量驱动事件
 
     private func handleAudioTick(_ value: Float) {
-        guard failGuardArmed, !isPaused, !showHint else { return }
+        guard failGuardArmed, !isPaused, !showHint, !isFinishing else { return }
         // 图书馆：音量过大警报 → 失败
         if level.theme == .library && value > level.loudTrapThreshold {
             withAnimation(.easeOut(duration: 0.15)) { loudWarningFlash = 1.0 }
@@ -334,6 +336,7 @@ struct GameView: View {
     // MARK: - 输入：滑动 / 方向键
 
     private func handleSwipe(_ translation: CGSize) {
+        guard !isFinishing else { return }
         let dx = translation.width
         let dy = translation.height
         let dir: Direction
@@ -346,7 +349,7 @@ struct GameView: View {
     }
 
     private func move(_ dir: Direction) {
-        guard !isPaused, !showHint else { return }
+        guard !isPaused, !showHint, !isFinishing else { return }
         var newCol = playerPos.col
         var newRow = playerPos.row
         switch dir {
@@ -404,6 +407,8 @@ struct GameView: View {
     }
 
     private func finishLevel(success: Bool, cause: FailCause?) {
+        guard !isFinishing else { return }
+        isFinishing = true
         timer?.invalidate()
         audioEngine.stop()
 

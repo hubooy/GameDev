@@ -115,28 +115,29 @@ struct MazeCanvas: View {
     }
 
     /// 根据音量+主题计算照亮半径
+    /// 注意：base 项保持很小，保证不发声时屏幕基本全黑（只看到玩家自身的一圈微光）
     private func lightRadius() -> CGFloat {
+        let v = CGFloat(audioLevel)
         let baseCellRadius: CGFloat
         switch level.theme {
         case .ordinary:
-            baseCellRadius = 1.2 + CGFloat(audioLevel) * 4.5
+            baseCellRadius = 0.4 + v * 4.8
         case .library:
-            let v = CGFloat(audioLevel)
             let bell = max(0, 1 - abs(v - 0.15) / 0.25)
-            baseCellRadius = 1.0 + bell * 5.0
+            baseCellRadius = 0.4 + bell * 5.0
         case .concert:
-            let v = max(0, CGFloat(audioLevel) - 0.5) * 2.0
-            baseCellRadius = 0.6 + v * 5.5
+            let amp = max(0, v - 0.5) * 2.0
+            baseCellRadius = 0.35 + amp * 5.8
         case .windy:
-            baseCellRadius = 1.0 + CGFloat(audioLevel) * 3.5
+            baseCellRadius = 0.35 + v * 4.0
         case .cave:
-            baseCellRadius = 1.5 + CGFloat(audioLevel) * 6.0
+            baseCellRadius = 0.5 + v * 6.0
         case .storm:
-            // 阵风：sin 相位扰动 ±35%
+            // 阵风：sin 相位扰动 ±35%；base 仍然要小
             let gust = CGFloat(sin(stormPhase)) * 0.35 + 1.0
-            baseCellRadius = (1.1 + CGFloat(audioLevel) * 4.5) * gust
+            baseCellRadius = (0.4 + v * 4.6) * gust
         }
-        return max(0.4, baseCellRadius) * cellSize
+        return max(0.32, baseCellRadius) * cellSize
     }
 
     // MARK: - 玩家点

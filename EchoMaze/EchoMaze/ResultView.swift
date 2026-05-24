@@ -9,6 +9,7 @@ struct ResultView: View {
     let result: LevelResult
     @EnvironmentObject var gameState: GameState
     @State private var starAppear: [Bool] = [false, false, false]
+    @State private var buttonsArmed: Bool = false   // 出现后短暂禁用，避免上一屏的连点穿透
 
     var body: some View {
         ZStack {
@@ -86,6 +87,7 @@ struct ResultView: View {
                 // 按钮组
                 HStack(spacing: 12) {
                     Button {
+                        guard buttonsArmed else { return }
                         FeedbackCenter.shared.haptic(.light)
                         gameState.openLevelSelect()
                     } label: {
@@ -99,8 +101,10 @@ struct ResultView: View {
                                 Capsule().stroke(Color.white.opacity(0.3), lineWidth: 0.5)
                             )
                     }
+                    .disabled(!buttonsArmed)
 
                     Button {
+                        guard buttonsArmed else { return }
                         FeedbackCenter.shared.haptic(.medium)
                         gameState.startLevel(result.level)
                     } label: {
@@ -112,7 +116,9 @@ struct ResultView: View {
                             .frame(height: 52)
                             .background(Capsule().fill(result.level.theme.accentColor))
                     }
+                    .disabled(!buttonsArmed)
                 }
+                .opacity(buttonsArmed ? 1 : 0.5)
                 .padding(.horizontal, 32)
                 .padding(.bottom, 50)
             }
@@ -120,6 +126,12 @@ struct ResultView: View {
         .onAppear {
             for i in 0..<min(result.stars, 3) {
                 starAppear[i] = true
+            }
+            // 出现 0.5s 后再允许点击，吃掉从 GameView 穿透过来的连点
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    buttonsArmed = true
+                }
             }
         }
     }
