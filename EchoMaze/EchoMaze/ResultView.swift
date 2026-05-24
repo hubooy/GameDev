@@ -11,6 +11,33 @@ struct ResultView: View {
     @State private var starAppear: [Bool] = [false, false, false]
     @State private var buttonsArmed: Bool = false   // 出现后短暂禁用，避免上一屏的连点穿透
 
+    /// 下一关；通关后未到末尾时存在
+    private var nextLevel: LevelData? {
+        guard result.success else { return nil }
+        let levels = LevelLibrary.shared.allLevels
+        guard let idx = levels.firstIndex(where: { $0.id == result.level.id }),
+              idx + 1 < levels.count else { return nil }
+        return levels[idx + 1]
+    }
+
+    /// 「再玩 / 重试」按钮文案
+    private var replayLabel: String {
+        result.success ? "再 玩" : "重 试"
+    }
+
+    /// 「再玩 / 重试」按钮在失败 或 通关后没有下一关时升级为主按钮
+    private var replayIsPrimary: Bool {
+        !result.success || nextLevel == nil
+    }
+
+    @ViewBuilder private var replayBackground: some View {
+        if replayIsPrimary {
+            Capsule().fill(result.level.theme.accentColor)
+        } else {
+            Capsule().stroke(Color.white.opacity(0.3), lineWidth: 0.5)
+        }
+    }
+
     var body: some View {
         ZStack {
             BackgroundAura(color: result.level.theme.accentColor.opacity(0.2))
@@ -84,39 +111,61 @@ struct ResultView: View {
 
                 Spacer()
 
-                // 按钮组
-                HStack(spacing: 12) {
-                    Button {
-                        guard buttonsArmed else { return }
-                        FeedbackCenter.shared.haptic(.light)
-                        gameState.openLevelSelect()
-                    } label: {
-                        Text("章 节")
-                            .tracking(4)
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundStyle(.white.opacity(0.8))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 52)
-                            .background(
-                                Capsule().stroke(Color.white.opacity(0.3), lineWidth: 0.5)
-                            )
-                    }
-                    .disabled(!buttonsArmed)
-
-                    Button {
-                        guard buttonsArmed else { return }
-                        FeedbackCenter.shared.haptic(.medium)
-                        gameState.startLevel(result.level)
-                    } label: {
-                        Text(result.success ? "再 玩" : "重 试")
-                            .tracking(4)
+                // 按钮组：通关且有下一关 → 主按钮变成「下一关」，原「再玩」降级到底排
+                VStack(spacing: 12) {
+                    if result.success, let next = nextLevel {
+                        Button {
+                            guard buttonsArmed else { return }
+                            FeedbackCenter.shared.haptic(.medium)
+                            gameState.startLevel(next)
+                        } label: {
+                            HStack(spacing: 10) {
+                                Text("下 一 关")
+                                    .tracking(6)
+                                Image(systemName: "arrow.right")
+                            }
                             .font(.system(size: 14, weight: .medium))
                             .foregroundStyle(.black)
                             .frame(maxWidth: .infinity)
                             .frame(height: 52)
-                            .background(Capsule().fill(result.level.theme.accentColor))
+                            .background(Capsule().fill(next.theme.accentColor))
+                        }
+                        .disabled(!buttonsArmed)
                     }
-                    .disabled(!buttonsArmed)
+
+                    HStack(spacing: 12) {
+                        Button {
+                            guard buttonsArmed else { return }
+                            FeedbackCenter.shared.haptic(.light)
+                            gameState.openLevelSelect()
+                        } label: {
+                            Text("章 节")
+                                .tracking(4)
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundStyle(.white.opacity(0.8))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                                .background(
+                                    Capsule().stroke(Color.white.opacity(0.3), lineWidth: 0.5)
+                                )
+                        }
+                        .disabled(!buttonsArmed)
+
+                        Button {
+                            guard buttonsArmed else { return }
+                            FeedbackCenter.shared.haptic(.medium)
+                            gameState.startLevel(result.level)
+                        } label: {
+                            Text(replayLabel)
+                                .tracking(4)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(replayIsPrimary ? .black : .white.opacity(0.8))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                                .background(replayBackground)
+                        }
+                        .disabled(!buttonsArmed)
+                    }
                 }
                 .opacity(buttonsArmed ? 1 : 0.5)
                 .padding(.horizontal, 32)
